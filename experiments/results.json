@@ -1,0 +1,88 @@
+{
+  "setup": {
+    "games": 30,
+    "max_plies": 120,
+    "seed": 2026,
+    "noise_levels": [
+      1,
+      2,
+      3
+    ],
+    "noise_trials_per_ply": 5
+  },
+  "plies": 3093,
+  "captures": 259,
+  "captures_pct": 8.37,
+  "colors_correct": 3093,
+  "colors_correct_pct": 100.0,
+  "pieces_correct": 3093,
+  "pieces_correct_pct": 100.0,
+  "occupancy_only": {
+    "correct": 2834,
+    "correct_pct": 91.63,
+    "error_on_capture": 259,
+    "error_other": 0
+  },
+  "noise": {
+    "k=1,rules=on": {
+      "trials": 15465,
+      "correct": 0,
+      "rejected": 15465,
+      "wrong": 0,
+      "correct_pct": 0.0,
+      "rejected_pct": 100.0,
+      "wrong_pct": 0.0
+    },
+    "k=1,rules=off": {
+      "trials": 15465,
+      "correct": 0,
+      "rejected": 15465,
+      "wrong": 0,
+      "correct_pct": 0.0,
+      "rejected_pct": 100.0,
+      "wrong_pct": 0.0
+    },
+    "k=2,rules=on": {
+      "trials": 15465,
+      "correct": 0,
+      "rejected": 15457,
+      "wrong": 8,
+      "correct_pct": 0.0,
+      "rejected_pct": 99.95,
+      "wrong_pct": 0.05
+    },
+    "k=2,rules=off": {
+      "trials": 15465,
+      "correct": 0,
+      "rejected": 15378,
+      "wrong": 87,
+      "correct_pct": 0.0,
+      "rejected_pct": 99.44,
+      "wrong_pct": 0.56
+    },
+    "k=3,rules=on": {
+      "trials": 15465,
+      "correct": 0,
+      "rejected": 15465,
+      "wrong": 0,
+      "correct_pct": 0.0,
+      "rejected_pct": 100.0,
+      "wrong_pct": 0.0
+    },
+    "k=3,rules=off": {
+      "trials": 15465,
+      "correct": 0,
+      "rejected": 15465,
+      "wrong": 0,
+      "correct_pct": 0.0,
+      "rejected_pct": 100.0,
+      "wrong_pct": 0.0
+    }
+  },
+  "time_us": {
+    "mean": 16.6,
+    "median": 15.3,
+    "p95": 22.6,
+    "max": 159.3
+  }
+}
