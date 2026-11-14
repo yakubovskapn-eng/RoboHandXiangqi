@@ -14,7 +14,7 @@ def main():
 
     real = Move("C", parse_square("h2"), parse_square("e2"))
     after = board.apply(real)
-    show("Після ходу (те, що бачить зір, лише кольори):", after)
+    show("Після ходу", after)
     move = detect_move(board, after.colors())
     print(f"\nРозпізнано: {move}  (UCI: {move.uci}, взяття: {move.is_capture})")
     board = after
