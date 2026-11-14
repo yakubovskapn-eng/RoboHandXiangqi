@@ -1,0 +1,52 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---------- Віртуальні оточення ----------
+.venv/
+venv/
+env/
+.env
+
+# ---------- Рушій: у кожного свій бінарник під свою ОС ----------
+# (pikafish / pikafish.exe / pikafish.nnue не комітимо: різні під ОС, nnue ~50 МБ)
+engines/*
+!engines/README.md
+
+# ---------- Камера / OpenCV ----------
+# Кадри, записи, налагоджувальні знімки - локальні, у git не потрібні
+captures/
+recordings/
+debug_frames/
+output/
+*.mp4
+*.avi
+*.mkv
+# Локальні налаштування камери (номер пристрою, експозиція тощо) - у кожного свої.
+# Спільні параметри (кути дошки, пороги кольорів) комітьте в config.json / calibration.json.
+*.local.json
+*.local.yaml
+
+# Тестові зображення для перевірки розпізнавання КОМІТИМО, лише з tests/data/:
+!tests/data/
+!tests/data/**
+
+# ---------- Логи ----------
+*.log
+
+# ---------- Редактори ----------
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+
+# ---------- ОС ----------
+.DS_Store
+Thumbs.db
+desktop.ini
