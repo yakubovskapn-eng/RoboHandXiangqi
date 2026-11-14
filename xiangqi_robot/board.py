@@ -128,6 +128,18 @@ class Board:
     def side_color(self) -> int:
         return RED if self.side_to_move == "w" else BLACK
 
+    def move_from_uci(self, uci: str) -> Move:
+        """
+        Хід у форматі рушія ("h2e2") -> Move з фігурою і взятою фігурою з цієї позиції
+        """
+        if len(uci) != 4:
+            raise ValueError(f"Невірний UCI-хід: {uci!r}")
+        frm, to = parse_square(uci[:2]), parse_square(uci[2:])
+        piece = self.piece_at(frm)
+        if piece == EMPTY:
+            raise ValueError(f"Хід {uci}: на {uci[:2]} немає фігури")
+        return Move(piece=piece, from_sq=frm, to_sq=to, captured=self.piece_at(to))
+
     def apply(self, move: Move) -> "Board":
         """
         Нова позиція після ходу (без перевірки правил)

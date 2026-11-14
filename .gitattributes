@@ -1,0 +1,11 @@
+# Однакові закінчення рядків у Linux і Windows: у репозиторії завжди LF,
+# інакше git показуватиме зміненим кожен рядок файлу після коміту з Windows.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.nnue binary
+*.exe binary
