@@ -1,9 +1,7 @@
-"""Камера: відкриття з перевіркою та налаштування (однакові для tools/camera_test.py і для play.py).
+"""
+Камера: відкриття з перевіркою та налаштування (однакові для tools/camera_test.py і для play.py).
 
 Налаштування лежать у camera_settings.json (шаблон camera_settings.example.json), щоб один раз підібрати
-номер камери, розмір кадру й експозицію, а потім усі скрипти використовували їх самі:
-  {"cam": 1, "width": 1920, "height": 1080, "exposure": -6}
-exposure: ручна експозиція (DirectShow: від'ємне число, менше = темніше); null = автоматична.
 """
 from __future__ import annotations
 
@@ -20,7 +18,7 @@ DEFAULTS = {"cam": 0, "width": 1920, "height": 1080, "exposure": None}
 
 
 def load_settings(path: str = "camera_settings.json") -> dict:
-    """Налаштування з файлу (якщо він є) поверх значень за замовчуванням."""
+    """Налаштування з файлу поверх значень за замовчуванням."""
     cfg = dict(DEFAULTS)
     if Path(path).exists():
         cfg.update(json.loads(Path(path).read_text(encoding="utf-8")))
@@ -36,8 +34,7 @@ def set_exposure(cap: "cv2.VideoCapture", exposure) -> None:
 
 
 def open_camera(index: int, width: int, height: int, exposure=None, tries: int = 3) -> "cv2.VideoCapture":
-    """Відкриває камеру й перевіряє, що вона справді віддає кадр потрібного розміру.
-    DirectShow інколи віддає перші кадри не одразу або вмикає менший розмір (640x480): тоді відкриваємо ще раз."""
+    """Відкриває камеру й перевіряє, що вона віддає кадр потрібного розміру."""
     backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
     cap = None
     for _ in range(tries):
@@ -52,7 +49,7 @@ def open_camera(index: int, width: int, height: int, exposure=None, tries: int =
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
         set_exposure(cap, exposure)
         ok, frame = False, None
-        for _ in range(30):                      # перші кадри часто не віддаються: чекаємо до ~3 с
+        for _ in range(30):
             ok, frame = cap.read()
             if ok:
                 break
@@ -106,8 +103,8 @@ class BoardCamera:
         self.points = vision.grid_points(vision.homography_from_corners(json.loads(Path(corners_file).read_text())))
         self.cal = vision.Calibration.from_json(Path(calib_file).read_text())
         self.overlay_out = overlay_out
-        self.flush = 5          # скільки застарілих кадрів з буфера викинути перед знімком
-        self.cap = None         # камера відкривається один раз і тримається відкритою всю гру
+        self.flush = 5
+        self.cap = None
 
     def read_frame(self):
         if self.cap is None:
@@ -127,6 +124,6 @@ class BoardCamera:
     def read_colors(self):
         frame = self.read_frame()
         colors = vision.classify(vision.extract_features(frame, self.points), self.cal)
-        if self.overlay_out:                      # картинка з розміткою, щоб бачити, що саме розпізнала програма
+        if self.overlay_out:                     
             cv2.imwrite(self.overlay_out, vision.draw_overlay(frame, self.points, colors))
         return vision.to_list(colors)

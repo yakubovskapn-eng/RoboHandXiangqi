@@ -1,9 +1,11 @@
-"""Налаштування й відкриття камери (без справжньої камери: підроблений cv2.VideoCapture)."""
+"""
+Налаштування й відкриття камери
+"""
 import numpy as np
 import pytest
 
 cv2 = pytest.importorskip("cv2")
-from xiangqi_robot import camera  # noqa: E402
+from xiangqi_robot import camera #noqa: E402
 
 
 def test_load_settings_merges_file_over_defaults(tmp_path):
@@ -26,7 +28,7 @@ def test_open_camera_reopens_small_frames_and_applies_exposure(monkeypatch):
         def get(self, prop): return 640
         def release(self): pass
         def read(self):
-            size = (480, 640) if len(made) == 1 else (1080, 1920)      # 1-ша спроба: камера вмикає 640x480
+            size = (480, 640) if len(made) == 1 else (1080, 1920)#1-ша спроба: камера вмикає 640x480
             return True, np.zeros((*size, 3), np.uint8)
 
     monkeypatch.setattr(camera.cv2, "VideoCapture", Cap)
@@ -52,7 +54,9 @@ def test_open_camera_leaves_auto_exposure_when_not_set(monkeypatch):
 
 
 def test_board_camera_reads_colors_from_frame(monkeypatch, tmp_path):
-    """Підміняємо кадр камери синтетичною стартовою позицією: карта кольорів має збігтися з нею."""
+    """
+    Підміняємо кадр камери синтетичною стартовою позицією: карта кольорів має збігтися з нею
+    """
     import json
     from xiangqi_robot import Board, vision
     from tests.test_vision import CORNERS, render, setup
@@ -81,7 +85,7 @@ def test_board_camera_reads_colors_from_frame(monkeypatch, tmp_path):
                                 overlay_out=str(tmp_path / "o.jpg"))
     assert reader.read_colors() == board.colors()
     assert reader.read_colors() == board.colors()
-    assert len(opened) == 1 and Cap.grabbed == 10      # камера відкрита один раз, буфер скидається перед кадром
+    assert len(opened) == 1 and Cap.grabbed == 10 #камера відкрита один раз, буфер скидається перед кадром
     reader.close()
     assert (tmp_path / "o.jpg").exists()
 
@@ -95,7 +99,7 @@ def _frames(*maps):
 def test_wait_stable_waits_for_same_position_and_skips_unchanged(monkeypatch):
     monkeypatch.setattr(camera.time, "sleep", lambda s: None)
     start, moved = [[0]], [[1]]
-    # позиція ще не змінилась (ignore), рука в кадрі (різні кадри), потім ставши стабільною: приймаємо
+    #позиція ще не змінилась (ignore), рука в кадрі (різні кадри), потім ставши стабільною: приймаємо
     read = _frames(start, start, start, [[2]], [[3]], moved, moved, moved)
     assert camera.wait_stable(read, lambda c: c, ValueError, ignore=start) == moved
 
@@ -112,7 +116,7 @@ def test_wait_stable_keeps_waiting_on_error_then_accepts_fixed_position(monkeypa
 
     read = _frames(bad, bad, bad, bad, good, good, good)
     assert camera.wait_stable(read, accept, ValueError, on_error=shown.append) == good
-    assert len(shown) == 1                      # однакова помилка друкується один раз
+    assert len(shown) == 1 #однакова помилка друкується один раз
 
 
 def test_wait_stable_raises_after_timeout(monkeypatch):

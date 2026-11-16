@@ -1,18 +1,22 @@
-"""Перевірка зору на реальній камері (USB-камера OV5640 тощо).
+"""
+Перевірка зору на реальній камері (USB-камера OV5640).
 
-Кроки (кожен окремою командою, між ними можна нічого не вимикати):
+Кроки
+  python tools/camera_test.py list
+  python tools/camera_test.py snap  --out start.jpg
+  python tools/camera_test.py corners start.jpg
+  python tools/camera_test.py check start.jpg
+  python tools/camera_test.py timing
+  python tools/camera_test.py snap  --out after.jpg
+  python tools/camera_test.py move  after.jpg --start start.jpg
 
-  python tools/camera_test.py list                          # яка камера під яким номером
-  python tools/camera_test.py snap  --out start.jpg         # фото стартової позиції (камера й експозиція з camera_settings.json)
-  python tools/camera_test.py corners start.jpg             # клік по 4 кутах -> corners.json
-  python tools/camera_test.py check start.jpg               # калібрування + картинка overlay
-  python tools/camera_test.py timing                        # скільки секунд іде на відкриття камери і на кадр
-  python tools/camera_test.py snap  --out after.jpg         # після ходу людини
-  python tools/camera_test.py move  after.jpg --start start.jpg   # який хід зроблено
-
-Запускати найкраще у Windows (Python + opencv-python), бо камера в WSL потребує
-додаткового налаштування usbipd. Репозиторій доступний у Windows як
-\\\\wsl$\\Ubuntu-22.04\\home\\<user>\\...
+яка камера під яким номером
+фото стартової позиції (камера й експозиція з camera_settings.json)
+клік по 4 кутах -> corners.json
+калібрування + картинка overlay
+скільки секунд іде на відкриття камери і на кадр
+після ходу людини
+який хід зроблено
 """
 from __future__ import annotations
 
@@ -42,7 +46,7 @@ def cmd_list(_args) -> None:
         backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
         cap = cv2.VideoCapture(i, backend)
         if cap.isOpened():
-            # Без запиту розміру Windows віддає 640x480 навіть для 1080p-камер.
+
             cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
@@ -57,10 +61,10 @@ def cmd_list(_args) -> None:
 
 def cmd_snap(args) -> None:
     cap = open_camera(args.cam, args.width, args.height, args.exposure)
-    # Вимикаємо автоекспозицію (не всі драйвери це підтримують, помилки нормальні).
+
     cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
     cap.set(cv2.CAP_PROP_AUTOFOCUS, 0)
-    # Перші кадри часто темні: даємо камері «прогрітися».
+
     for _ in range(args.warmup):
         cap.read()
         time.sleep(0.03)
@@ -194,17 +198,17 @@ def cmd_preview(args) -> None:
         print(f"Калібрування за {args.start}: зайнятість {cal.texture_threshold:.1f}, червоність {cal.red_threshold:.1f}")
     cap.set(cv2.CAP_PROP_FPS, args.fps)
     if args.settings:
-        cap.set(cv2.CAP_PROP_SETTINGS, 1)        # вікно драйвера камери (лише DirectShow): яскравість, експозиція, підсвітка
+        cap.set(cv2.CAP_PROP_SETTINGS, 1)
     print("Вікно 'camera': S зберегти кадр, Q або Esc вийти.")
     saved = 0
     failed = 0
     delay = 1.0 / max(1, args.fps)
     while True:
-        time.sleep(delay * 0.5)  # менше кадрів = менше навантаження й нагрівання
+        time.sleep(delay * 0.5)
         ok, frame = cap.read()
         if not ok:
             failed += 1
-            if failed > 30:                      # поодинокі збої кадру нормальні, а ось ~3 с поспіль це вже проблема
+            if failed > 30:
                 print("Камера не віддає кадр понад 3 с: перевірте кабель і чи її не тримає інша програма")
                 break
             time.sleep(0.1)
@@ -283,7 +287,7 @@ def main() -> None:
     s.set_defaults(fn=cmd_move)
 
     args = p.parse_args()
-    if hasattr(args, "camera_config"):             # snap і preview: значення, яких не задано в команді, беремо з файлу
+    if hasattr(args, "camera_config"):             
         cfg = load_settings(args.camera_config)
         for name in ("cam", "width", "height", "exposure"):
             if getattr(args, name, None) is None:
