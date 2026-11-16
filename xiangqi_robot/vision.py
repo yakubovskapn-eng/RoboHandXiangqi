@@ -1,6 +1,6 @@
 """Зір: з фото дошки отримати карту кольорів 10x9 (0 порожньо, 1 червоні, 2 чорні).
 
-Потрібні opencv-python і numpy (див. requirements-vision.txt). Ядро проєкту
+Потрібні opencv-python і numpy. Ядро проєкту
 (board, rules, move_detection) від цього модуля не залежить.
 
 Ідея:
@@ -12,14 +12,14 @@
    піксель кожного з 90 перетинів.
 3. Навколо кожного перетину в круглій області міряємо контрастність (фігура з
    ієрогліфом контрастніша за порожню клітинку) і червоність (червоні ієрогліфи).
-4. Порогів не вгадуємо: калібруємо їх на фото стартової позиції, де відомо,
+4. Пороги калібруємо на фото стартової позиції, де відомо,
    які клітинки зайняті й яким кольором.
 """
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 import cv2
 import numpy as np
@@ -96,19 +96,28 @@ def extract_features(frame_bgr: np.ndarray, points: np.ndarray) -> Features:
 
 @dataclass
 class Calibration:
-    texture_threshold: float  # вище: клітинка зайнята
-    red_threshold: float      # вище: фігура червона (серед зайнятих)
-    brightness_threshold: float  # вище: світлий диск фігури (відсікає напис «річка»); -1 = вимкнено
-    occupancy_gap: float      # >0: зайняті й порожні чисто розділяються
-    color_gap: float          # >0: червоні й чорні чисто розділяються
-    color_accuracy: float     # частка стартових фігур з правильним кольором
+    texture_threshold: float # вище: клітинка зайнята
+    red_threshold: float # вище: фігура червона (серед зайнятих)
+    brightness_threshold: float # вище: світлий диск фігури (відсікає напис «річка»); -1 = вимкнено
+    occupancy_gap: float # >0: зайняті й порожні чисто розділяються
+    color_gap: float # >0: червоні й чорні чисто розділяються
+    color_accuracy: float # частка стартових фігур з правильним кольором
+    # Індивідуальний «рівень порожньої клітинки» зі стартового фото (None там, де стояла фігура).
+    # Потрібен, бо на дошці є клітинки з написами/лініями (річка, палац), де порожньо, але контраст
+    # вищий за загальний поріг. Для них поріг = власний рівень + margin.
+    empty_texture: Optional[List[List[Optional[float]]]] = None
+    margin: float = 0.0
 
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
 
+    @classmethod
+    def from_json(cls, text: str) -> "Calibration":
+        return cls(**json.loads(text))
+
 
 def calibrate_on_start(features: Features, board: Board | None = None) -> Calibration:
-    """Підбирає пороги за фото стартової позиції (там усе відомо)."""
+    """Підбирає пороги за фото стартової позиції"""
     board = board or Board.start()
     truth = np.array(board.colors())
     tex, red = features.texture, features.redness
@@ -126,7 +135,15 @@ def calibrate_on_start(features: Features, board: Board | None = None) -> Calibr
     b_high = float(np.percentile(features.brightness[truth == NO_PIECE], 95))
     bright_thr = (b_low + b_high) / 2 if b_low > b_high else -1.0
 
-    cal = Calibration(tex_thr, red_thr, bright_thr, occ_low - empty_high, red_low - black_high, 0.0)
+    # Індивідуальні рівні порожніх клітинок: найконтрастніша порожня клітинка (напис «річка»)
+    # не повинна визначатися зайнятою, навіть якщо вона вища за 95-й процентиль.
+    empty_mask = truth == NO_PIECE
+    base = np.where(empty_mask, tex, np.nan)
+    margin = max(3.0, 0.35 * (occ_low - float(np.median(tex[empty_mask]))))
+    empty_texture = [[None if np.isnan(v) else float(v) for v in row] for row in base]
+
+    cal = Calibration(tex_thr, red_thr, bright_thr, occ_low - empty_high, red_low - black_high, 0.0,
+                      empty_texture, margin)
     pred = classify(features, cal)
     occupied = truth != NO_PIECE
     cal.color_accuracy = float((pred[occupied] == truth[occupied]).mean())
@@ -136,7 +153,11 @@ def calibrate_on_start(features: Features, board: Board | None = None) -> Calibr
 def classify(features: Features, cal: Calibration) -> np.ndarray:
     """Карта кольорів (ROWS, COLS): 0 порожньо, 1 червоні, 2 чорні."""
     out = np.zeros((ROWS, COLS), dtype=int)
-    occupied = (features.texture > cal.texture_threshold) & (features.brightness > cal.brightness_threshold)
+    thr = np.full((ROWS, COLS), cal.texture_threshold, dtype=np.float32)
+    if cal.empty_texture is not None:
+        base = np.array(cal.empty_texture, dtype=np.float32)  # None -> nan
+        thr = np.where(np.isnan(base), thr, np.maximum(thr, base + cal.margin))
+    occupied = (features.texture > thr) & (features.brightness > cal.brightness_threshold)
     is_red = features.redness > cal.red_threshold
     out[occupied & is_red] = RED
     out[occupied & ~is_red] = BLACK

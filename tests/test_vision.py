@@ -1,4 +1,5 @@
-"""Тести зору на синтетичних зображеннях (без камери).
+"""
+Тести зору на синтетичних зображеннях (без камери).
 
 Малюємо дошку з фігурами, спотворюємо перспективою, як це зробила б камера під кутом,
 і перевіряємо, що vision повертає правильну карту кольорів і хід.
@@ -12,7 +13,7 @@ np = pytest.importorskip("numpy")
 from xiangqi_robot import Board, Move, detect_move, parse_square, vision  # noqa: E402
 from xiangqi_robot.board import COLS, ROWS  # noqa: E402
 
-CORNERS = [(430, 150), (1500, 190), (1560, 930), (360, 880)]  # a9, i9, i0, a0 у кадрі 1920x1080
+CORNERS = [(430, 150), (1500, 190), (1560, 930), (360, 880)]  #a9, i9, i0, a0 у кадрі 1920x1080
 
 
 def render(board: Board, noise: int = 0) -> np.ndarray:
@@ -68,9 +69,41 @@ def test_move_recognized_from_image():
 
 
 def test_capture_recognized_from_image():
-    board = Board.from_fen("4k4/9/9/9/4p4/9/4R4/9/9/3K5 w - - 0 1")  # R e3 бере p e5? (e5 - чорна піхота)
+    board = Board.from_fen("4k4/9/9/9/4p4/9/4R4/9/9/3K5 w - - 0 1") #R e3 бере p e5? (e5 - чорна піхота)
     move = Move("R", parse_square("e3"), parse_square("e5"), "p")
     start, pts, cal = setup()
     colors = vision.classify(vision.extract_features(render(board.apply(move), 8), pts), cal)
     found = detect_move(board, vision.to_list(colors))
     assert found.uci == "e3e5" and found.is_capture
+
+
+def _with_river_text(img: np.ndarray, pts: np.ndarray, r: int, c: int) -> np.ndarray:
+    """Темні штрихи в порожній клітинці: імітація напису «річка» на дошці."""
+    out = img.copy()
+    x, y = pts[r, c]
+    for dx in range(-22, 23, 11):
+        cv2.line(out, (int(x + dx), int(y - 26)), (int(x - dx * 0.4), int(y + 26)), (25, 25, 25), 6)
+    cv2.line(out, (int(x - 28), int(y)), (int(x + 28), int(y + 4)), (25, 25, 25), 6)
+    return out
+
+
+def test_empty_cell_with_printed_text_is_not_a_piece():
+    """Регресія: напис «річка» на порожній клітинці e5 не має сприйматися як фігура."""
+    start = Board.start()
+    pts = vision.grid_points(vision.homography_from_corners(CORNERS))
+    img = _with_river_text(render(start, 8), pts, 5, 4)
+    feats = vision.extract_features(img, pts)
+    cal = vision.calibrate_on_start(feats, start)
+    assert vision.classify(feats, cal).tolist() == start.colors()
+    old = vision.Calibration(**{**cal.__dict__, "empty_texture": None, "margin": 0.0})
+    assert vision.classify(feats, old)[5, 4] != 0
+
+
+def test_real_piece_on_text_cell_still_detected():
+    start = Board.start()
+    pts = vision.grid_points(vision.homography_from_corners(CORNERS))
+    cal = vision.calibrate_on_start(
+        vision.extract_features(_with_river_text(render(start, 8), pts, 5, 4), pts), start)
+    after = Board.from_fen("4k4/9/9/9/9/4r4/9/9/9/4K4 w - - 0 1")  
+    colors = vision.classify(vision.extract_features(render(after, 8), pts), cal)
+    assert colors[5, 4] == 2
