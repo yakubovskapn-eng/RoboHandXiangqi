@@ -1,3 +1,4 @@
+from .arm import Arm, DobotMG400, DryRunArm, Mover, RobotCalibration
 from .board import BLACK, NO_PIECE, RED, START_FEN, Board, Move, parse_square, square_name
 from .engine import EngineError, UCIEngine, find_engine
 from .game import GameOver, RobotMoveMismatch, XiangqiGame, side_name
@@ -11,6 +12,7 @@ from .move_detection import (
 from .rules import is_valid_move, pseudo_legal_moves
 
 __all__ = [
+    "Arm", "DobotMG400", "DryRunArm", "Mover", "RobotCalibration",
     "BLACK", "NO_PIECE", "RED", "START_FEN", "Board", "Move", "parse_square", "square_name",
     "EngineError", "UCIEngine", "find_engine",
     "GameOver", "RobotMoveMismatch", "XiangqiGame", "side_name",
